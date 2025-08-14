@@ -1,6 +1,6 @@
 import typer
 import boto3
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from tabulate import tabulate
 import botocore.exceptions
 import json
@@ -43,7 +43,7 @@ def calculate_costs(profile_name: str, days: int = 30):
         cw_client = session.client("cloudwatch")
 
         log_groups = get_log_groups(logs_client)
-        end_time = datetime.now(datetime.timezone.utc)
+        end_time = datetime.now(timezone.utc)
         start_time = end_time - timedelta(days=days)
 
         costs = []
