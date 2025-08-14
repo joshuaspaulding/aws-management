@@ -75,12 +75,8 @@ def calculate_costs(profile_name: str, days: int = 30):
         return []
 
 @app.command()
-def summarize(profiles: str = typer.Option("", help="Comma-separated list of AWS profiles to analyze"), days: int = typer.Option(30, help="Number of days to summarize costs for")):
+def summarize(profiles: str = typer.Option(..., help="Comma-separated list of AWS profiles to analyze"), days: int = typer.Option(30, help="Number of days to summarize costs for")):
     """Summarize CloudWatch Logs costs by profile and log group."""
-    if not profiles:
-        typer.echo("Please provide AWS profiles to analyze using --profiles option")
-        return
-    
     profile_list = [p.strip() for p in profiles.split(",")]
     summary = []
     
@@ -102,12 +98,8 @@ def summarize(profiles: str = typer.Option("", help="Comma-separated list of AWS
         typer.echo("No costs found or access issues.")
 
 @app.command()
-def graph(profiles: str = typer.Option("", help="Comma-separated list of AWS profiles to analyze"), days: int = typer.Option(30, help="Number of days to graph costs for")):
+def graph(profiles: str = typer.Option(..., help="Comma-separated list of AWS profiles to analyze"), days: int = typer.Option(30, help="Number of days to graph costs for")):
     """Graph CloudWatch Logs costs by profile and log group using matplotlib (saves to PNG files)."""
-    if not profiles:
-        typer.echo("Please provide AWS profiles to analyze using --profiles option")
-        return
-    
     profile_list = [p.strip() for p in profiles.split(",")]
     all_costs = {}
     
