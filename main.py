@@ -49,7 +49,9 @@ def calculate_costs(profile_name: str, days: int = 30):
         costs = []
         for group in log_groups:
             group_name = group["logGroupName"]
+            
             incoming_bytes = get_metric_data(cw_client, "IncomingBytes", group_name, start_time, end_time)
+            ingestion_gb = sum(incoming_bytes) / 1e9 if incoming_bytes else 0
             
             # CloudWatch Logs doesn't have StoredBytes metric, so we'll estimate storage from log group info
             # Get log group details to estimate storage
@@ -63,11 +65,6 @@ def calculate_costs(profile_name: str, days: int = 30):
             except Exception:
                 current_storage_gb = 0
 
-            # Debug: Print raw metric values for troubleshooting
-            if len(incoming_bytes) == 0:
-                typer.echo(f"Warning - {group_name}: No IncomingBytes metric data found")
-
-            ingestion_gb = sum(incoming_bytes) / 1e9 if incoming_bytes else 0
             storage_gb_month = current_storage_gb * (days / 30)
 
             ingestion_cost = ingestion_gb * 0.50  # $0.50/GB
