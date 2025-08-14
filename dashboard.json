@@ -1,0 +1,44 @@
+{
+  "widgets": [
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 0,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          [ { "expression": "SEARCH('{AWS/Logs,LogGroupName} MetricName=\"IncomingBytes\"', 'Sum', 86400) / 1000000000 * 0.50", "label": "Est. Ingestion Cost ($)", "id": "e1" } ]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "us-east-1",
+        "title": "Estimated CloudWatch Logs Ingestion Costs by Log Group",
+        "period": 86400,
+        "legend": {
+          "position": "right"
+        }
+      }
+    },
+    {
+      "type": "metric",
+      "x": 12,
+      "y": 0,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          [ { "expression": "SEARCH('{AWS/Logs,LogGroupName} MetricName=\"StoredBytes\"', 'Average', 86400) / 1000000000 * 0.03 / 30", "label": "Est. Daily Storage Cost ($)", "id": "e2" } ]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "us-east-1",
+        "title": "Estimated CloudWatch Logs Storage Costs by Log Group (Daily)",
+        "period": 86400,
+        "legend": {
+          "position": "right"
+        }
+      }
+    }
+  ]
+}
