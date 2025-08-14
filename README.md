@@ -1,31 +1,32 @@
 # AWS CloudWatch Accountant
 
-A Python CLI tool for monitoring and analyzing CloudWatch Logs costs across AWS Organization accounts. This tool helps you understand your CloudWatch Logs spending by providing cost summaries, visualizations, and cross-account monitoring capabilities.
+A Python CLI tool for monitoring and analyzing CloudWatch Logs costs across multiple AWS accounts using different AWS profiles. This tool helps you understand your CloudWatch Logs spending by providing cost summaries, visualizations, and multi-profile monitoring capabilities.
 
 ## Features
 
-- **Cross-Account Monitoring**: Monitor CloudWatch Logs costs across all accounts in your AWS Organization
+- **Multi-Profile Monitoring**: Monitor CloudWatch Logs costs across multiple AWS accounts using different profiles
 - **Cost Analysis**: Calculate ingestion and storage costs for each log group
 - **Visual Reports**: Generate PNG charts showing cost breakdowns
-- **IAM Role Management**: Automatically set up required IAM roles for cross-account access
 - **CLI Interface**: Easy-to-use command-line interface built with Typer
 
 ## Prerequisites
 
 - Python 3.7+
-- AWS CLI configured with appropriate permissions
-- Access to AWS Organizations
-- Member accounts must have `OrganizationAccountAccessRole` configured
+- AWS CLI configured with multiple profiles
+- saml2aws configured for profile switching
+- AWS credentials with permissions to:
+  - Read CloudWatch Logs
+  - Access CloudWatch metrics
 
 ## Installation
 
-1. Clone the repository:
+1. Clone this repository:
 ```bash
-git clone <repository-url>
-cd aws-cloudwatch-accountant
+git clone https://github.com/joshuaspaulding/aws-management.git
+cd aws-management
 ```
 
-2. Install required dependencies:
+2. Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
@@ -40,67 +41,75 @@ The following Python packages are required:
 
 ## Usage
 
-### Setup IAM Roles
+The tool provides two main commands that require you to specify AWS profiles:
 
-Before using the tool, you need to set up IAM roles in all member accounts:
+### Summarize Costs
 
-```bash
-python main.py setup
-```
-
-This command:
-- Creates a custom IAM role (`CloudWatchCostMonitorRole`) in each account
-- Configures cross-account trust policies
-- Attaches minimal permissions for CloudWatch Logs and metrics access
-
-### Cost Summary
-
-Generate a cost summary for all log groups across accounts:
+Generate a cost summary table for all log groups across specified AWS profiles:
 
 ```bash
-python main.py summarize --days 30
+python main.py summarize --profiles "prod,staging,dev" --days 30
 ```
 
 Options:
+- `--profiles`: Comma-separated list of AWS profiles to analyze (required)
 - `--days`: Number of days to analyze (default: 30)
 
-### Generate Cost Charts
+### Generate Charts
 
-Create visual charts of your CloudWatch Logs costs:
+Create visual charts of your costs:
 
 ```bash
-python main.py graph --days 30
+python main.py graph --profiles "prod,staging,dev" --days 30
 ```
 
-This generates three PNG files:
+This will generate three PNG files:
 - `ingestion_costs.png` - Ingestion costs by log group
 - `storage_costs.png` - Storage costs by log group  
 - `total_costs.png` - Total costs by log group
+
+## AWS Profile Setup
+
+### Using saml2aws
+
+1. Configure saml2aws for your AWS accounts:
+```bash
+saml2aws configure --profile prod
+saml2aws configure --profile staging
+saml2aws configure --profile dev
+```
+
+2. Login to each profile:
+```bash
+saml2aws login --profile prod
+saml2aws login --profile staging
+saml2aws login --profile dev
+```
+
+3. Verify profiles are working:
+```bash
+aws sts get-caller-identity --profile prod
+aws sts get-caller-identity --profile staging
+aws sts get-caller-identity --profile dev
+```
 
 ## Cost Calculation
 
 The tool calculates costs based on AWS CloudWatch Logs pricing:
 
-- **Ingestion**: $0.50 per GB
-- **Storage**: $0.03 per GB-month
+- **Ingestion**: $0.50 per GB of data ingested
+- **Storage**: $0.03 per GB-month of data stored
 
-Costs are calculated using CloudWatch metrics:
-- `IncomingBytes` for ingestion costs
-- `StoredBytes` for storage costs
+Costs are calculated over the specified time period and aggregated by log group and profile.
 
-## IAM Permissions
+## Required AWS Permissions
 
-The tool requires the following permissions:
+Your AWS profiles need the following permissions:
 
-### Management Account
-- `organizations:DescribeOrganization`
-- `organizations:ListAccounts`
-- `iam:CreateRole`
-- `iam:UpdateAssumeRolePolicy`
-- `iam:PutRolePolicy`
-
-### Member Accounts
+**For CloudWatch Logs access:**
 - `logs:DescribeLogGroups`
+
+**For CloudWatch Metrics access:**
 - `cloudwatch:GetMetricData`
 - `cloudwatch:GetMetricStatistics`
 - `cloudwatch:ListMetrics`
@@ -109,47 +118,53 @@ The tool requires the following permissions:
 
 ### Cost Summary Table
 ```
-┌─────────────┬──────────────────────┬─────────────────┬──────────────┬─────────────┐
-│ Account     │ LogGroup             │ IngestionCost   │ StorageCost  │ TotalCost   │
-├─────────────┼──────────────────────┼─────────────────┼──────────────┼─────────────┤
-│ Production  │ /aws/lambda/app      │ $12.50          │ $0.45        │ $12.95      │
-│ Staging     │ /aws/lambda/test     │ $5.20           │ $0.18        │ $5.38       │
-└─────────────┴──────────────────────┴─────────────────┴──────────────┴─────────────┘
++-------------+------------------+------------------+-------------+------------+
+| Profile     | LogGroup         | IngestionCost    | StorageCost | TotalCost  |
++=============+==================+==================+=============+============+
+| prod        | /aws/lambda/... | $12.50          | $0.45       | $12.95     |
+| staging     | /aws/ecs/...    | $8.75           | $0.30       | $9.05      |
+| dev         | /aws/lambda/... | $3.20           | $0.15       | $3.35      |
++-------------+------------------+------------------+-------------+------------+
 ```
 
 ### Generated Charts
-The tool creates three PNG files showing cost breakdowns across all log groups and accounts.
+The tool creates three PNG files showing cost breakdowns across all log groups in your specified profiles.
+
+## Example Workflows
+
+### Analyze Production and Staging Costs
+```bash
+python main.py summarize --profiles "prod,staging" --days 7
+```
+
+### Generate Monthly Cost Charts
+```bash
+python main.py graph --profiles "prod,staging,dev,test" --days 30
+```
+
+### Quick Daily Summary
+```bash
+python main.py summarize --profiles "prod" --days 1
+```
 
 ## Troubleshooting
 
-### Common Issues
+**"Please provide AWS profiles to analyze using --profiles option"**
+- Make sure to specify the `--profiles` parameter with your AWS profile names
 
-1. **Permission Denied**: Ensure your AWS credentials have the required permissions
-2. **Role Not Found**: Run the `setup` command first to create required IAM roles
-3. **No Data**: Check that CloudWatch Logs are enabled and generating metrics
+**"No costs found or access issues"**
+- Verify your AWS profiles have the required permissions
+- Check that you can access CloudWatch Logs and Metrics with each profile
+- Ensure your saml2aws sessions are active
 
-### Debug Mode
-
-For detailed error information, check the AWS CloudTrail logs or run with verbose logging.
-
-## Security Considerations
-
-- The tool creates IAM roles with minimal required permissions
-- Cross-account access is limited to CloudWatch Logs and metrics only
-- No sensitive data is logged or stored locally
+**Permission errors**
+- Confirm your AWS profiles have access to CloudWatch services
+- Verify you can list log groups with each profile
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+Feel free to submit issues and enhancement requests!
 
 ## License
 
-[Add your license information here]
-
-## Support
-
-For issues and questions, please open an issue in the repository.
+This project is open source and available under the MIT License.
