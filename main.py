@@ -43,7 +43,7 @@ def calculate_costs(profile_name: str, days: int = 30):
         cw_client = session.client("cloudwatch")
 
         log_groups = get_log_groups(logs_client)
-        end_time = datetime.utcnow()
+        end_time = datetime.now(datetime.timezone.utc)
         start_time = end_time - timedelta(days=days)
 
         costs = []
@@ -79,11 +79,15 @@ def summarize(profiles: str = typer.Option(..., help="Comma-separated list of AW
     """Summarize CloudWatch Logs costs by profile and log group."""
     profile_list = [p.strip() for p in profiles.split(",")]
     summary = []
+    profile_totals = {}
     
     for profile in profile_list:
         typer.echo(f"Analyzing profile: {profile}")
         costs = calculate_costs(profile, days)
+        profile_total = 0
+        
         for cost in costs:
+            profile_total += cost['TotalCost']
             summary.append({
                 "Profile": profile,
                 "LogGroup": cost["LogGroup"],
@@ -91,9 +95,23 @@ def summarize(profiles: str = typer.Option(..., help="Comma-separated list of AW
                 "StorageCost": f"${cost['StorageCost']:.2f}",
                 "TotalCost": f"${cost['TotalCost']:.2f}"
             })
+        
+        profile_totals[profile] = profile_total
 
     if summary:
         typer.echo(tabulate(summary, headers="keys", tablefmt="grid"))
+        
+        # Display totals per profile
+        typer.echo("\n" + "="*60)
+        typer.echo("TOTALS PER PROFILE")
+        typer.echo("="*60)
+        for profile, total in profile_totals.items():
+            typer.echo(f"{profile}: ${total:.2f}")
+        
+        # Display grand total
+        grand_total = sum(profile_totals.values())
+        typer.echo("-" * 60)
+        typer.echo(f"GRAND TOTAL: ${grand_total:.2f}")
     else:
         typer.echo("No costs found or access issues.")
 
