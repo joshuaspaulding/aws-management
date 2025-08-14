@@ -52,9 +52,14 @@ def calculate_costs(profile_name: str, days: int = 30):
             incoming_bytes = get_metric_data(cw_client, "IncomingBytes", group_name, start_time, end_time)
             stored_bytes = get_metric_data(cw_client, "StoredBytes", group_name, start_time, end_time)
 
+            # Debug: Print raw metric values for troubleshooting
+            if len(incoming_bytes) == 0 or len(stored_bytes) == 0:
+                typer.echo(f"Warning - {group_name}: No metric data found (IncomingBytes: {len(incoming_bytes)} points, StoredBytes: {len(stored_bytes)} points)")
+
             ingestion_gb = sum(incoming_bytes) / 1e9 if incoming_bytes else 0
-            avg_storage_gb = sum(stored_bytes) / len(stored_bytes) / 1e9 if stored_bytes else 0
-            storage_gb_month = avg_storage_gb * (days / 30)
+            # For storage, use the most recent value (current storage), not average
+            current_storage_gb = stored_bytes[-1] / 1e9 if stored_bytes else 0
+            storage_gb_month = current_storage_gb * (days / 30)
 
             ingestion_cost = ingestion_gb * 0.50  # $0.50/GB
             storage_cost = storage_gb_month * 0.03  # $0.03/GB-month
