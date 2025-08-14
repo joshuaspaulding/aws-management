@@ -26,9 +26,26 @@ git clone https://github.com/joshuaspaulding/aws-management.git
 cd aws-management
 ```
 
-2. Install dependencies:
+2. Create and activate a virtual environment:
+```bash
+# Create virtual environment
+python3 -m venv venv
+
+# Activate virtual environment
+# On macOS/Linux:
+source venv/bin/activate
+# On Windows:
+# venv\Scripts\activate
+```
+
+3. Install dependencies:
 ```bash
 pip install -r requirements.txt
+```
+
+4. Verify installation:
+```bash
+python main.py --help
 ```
 
 ## Dependencies
@@ -160,6 +177,11 @@ python main.py summarize --profiles "prod" --days 1
 **Permission errors**
 - Confirm your AWS profiles have access to CloudWatch services
 - Verify you can list log groups with each profile
+
+**Virtual environment issues**
+- Make sure you've activated the virtual environment before running the tool
+- Verify all dependencies are installed: `pip list`
+- Try recreating the virtual environment if you encounter issues
 
 ## Contributing
 
